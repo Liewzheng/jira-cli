@@ -64,6 +64,13 @@ func (i *Issue) Get() string {
 
 	if i.params.JQL != "" {
 		q.Raw(i.params.JQL)
+		// If project is empty and raw JQL doesn't have project filter, remove default empty project filter
+		if i.Project == "" {
+			q.RemoveDefaultProjectFilter()
+		}
+	} else if i.Project == "" {
+		// Remove default empty project filter when no project is specified
+		q.RemoveDefaultProjectFilter()
 	}
 
 	q.And(func() {
@@ -105,10 +112,13 @@ func (i *Issue) Get() string {
 		}
 	})
 
-	if i.params.Reverse {
-		q.OrderBy(obf, jql.DirectionAscending)
-	} else {
-		q.OrderBy(obf, jql.DirectionDescending)
+	// Only add ORDER BY if the raw JQL doesn't already contain it
+	if i.params.JQL == "" || !strings.Contains(strings.ToUpper(i.params.JQL), "ORDER BY") {
+		if i.params.Reverse {
+			q.OrderBy(obf, jql.DirectionAscending)
+		} else {
+			q.OrderBy(obf, jql.DirectionDescending)
+		}
 	}
 
 	return q.String()
