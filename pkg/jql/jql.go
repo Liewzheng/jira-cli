@@ -188,16 +188,9 @@ func (j *JQL) Raw(q string) *JQL {
 	}
 	// Check if the raw query contains ORDER BY clause
 	if orderByIdx := strings.Index(strings.ToUpper(q), "ORDER BY"); orderByIdx != -1 {
-		// Extract the query part without ORDER BY
-		queryPart := strings.TrimSpace(q[:orderByIdx])
-		// Extract the ORDER BY part
-		orderByPart := strings.TrimSpace(q[orderByIdx:])
-		// Extract the field and direction from ORDER BY
-		orderByParts := strings.SplitN(strings.TrimPrefix(strings.ToUpper(orderByPart), "ORDER BY"), " ", 2)
-		if len(orderByParts) == 2 {
-			j.orderBy = strings.TrimSpace(orderByPart)
-		}
-		j.filters = append(j.filters, queryPart)
+		// Find ORDER BY position and directly extract the entire tail
+		j.orderBy = strings.TrimSpace(q[orderByIdx:])
+		j.filters = append(j.filters, strings.TrimSpace(q[:orderByIdx]))
 	} else {
 		j.filters = append(j.filters, q)
 	}
