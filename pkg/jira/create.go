@@ -228,19 +228,22 @@ func (*Client) getRequestData(req *CreateRequest) *createRequest {
 }
 
 func constructCustomFields(fields map[string]string, configuredFields []IssueTypeField, data *createRequest) {
-	if len(fields) == 0 || len(configuredFields) == 0 {
+	if len(fields) == 0 {
 		return
 	}
 
 	data.Fields.M.customFields = make(customField)
 
-	for key, val := range fields {
-		for _, configured := range configuredFields {
-			identifier := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(configured.Name)), " ", "-")
-			if identifier != strings.ToLower(key) {
-				continue
-			}
+	// Build a map of configured fields for quick lookup by name
+	configuredMap := make(map[string]IssueTypeField)
+	for _, configured := range configuredFields {
+		identifier := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(configured.Name)), " ", "-")
+		configuredMap[identifier] = configured
+	}
 
+	for key, val := range fields {
+		// First, check if the key matches a configured field name
+		if configured, ok := configuredMap[strings.ToLower(key)]; ok {
 			switch configured.Schema.DataType {
 			case customFieldFormatOption:
 				data.Fields.M.customFields[configured.Key] = customFieldTypeOption{Value: val}
@@ -268,6 +271,10 @@ func constructCustomFields(fields map[string]string, configuredFields []IssueTyp
 			default:
 				data.Fields.M.customFields[configured.Key] = val
 			}
+		} else if strings.HasPrefix(key, "customfield_") {
+			// If the key starts with "customfield_", use it directly as the field ID
+			// This allows users to specify custom field IDs directly
+			data.Fields.M.customFields[key] = val
 		}
 	}
 }
